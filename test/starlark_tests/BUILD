@@ -13,6 +13,7 @@ load(":apple_static_xcframework_tests.bzl", "apple_static_xcframework_test_suite
 load(":apple_universal_binary_tests.bzl", "apple_universal_binary_test_suite")
 load(":apple_xcframework_import_tests.bzl", "apple_xcframework_import_test_suite")
 load(":apple_xcframework_tests.bzl", "apple_xcframework_test_suite")
+load(":application_exports_tests.bzl", "application_exports_test_suite")
 load(":docc_tests.bzl", "docc_test_suite")
 load(":dtrace_compile_tests.bzl", "dtrace_compile_test_suite")
 load(":generate_dynamic_xcframework_tests.bzl", "generate_dynamic_xcframework_test_suite")
@@ -75,6 +76,8 @@ load(":xcarchive_tests.bzl", "xcarchive_test_suite")
 load(":xctrunner_tests.bzl", "xctrunner_test_suite")
 
 licenses(["notice"])
+
+application_exports_test_suite(name = "application_exports")
 
 apple_bundle_version_test_suite(name = "apple_bundle_version")
 

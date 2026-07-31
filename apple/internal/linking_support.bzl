@@ -34,6 +34,10 @@ load(
     "entitlements_support",
 )
 load(
+    "//apple/internal:features_support.bzl",
+    "features_support",
+)
+load(
     "//apple/internal:intermediates.bzl",
     "intermediates",
 )
@@ -48,6 +52,39 @@ load(
     "ApplePlatformInfo",
     "new_appledebugoutputsinfo",
 )
+
+_RESTRICT_APPLICATION_EXPORTS_FEATURE = "apple.restrict_application_exports"
+
+# These products are launched by the operating system rather than linked as APIs by clients.
+# Frameworks, dylibs, tests, tools, and general-purpose plug-ins are intentionally excluded.
+_APPLICATION_EXECUTABLE_PRODUCT_TYPES = [
+    apple_product_type.application,
+    apple_product_type.app_clip,
+    apple_product_type.app_extension,
+    apple_product_type.extensionkit_extension,
+    apple_product_type.messages_extension,
+    apple_product_type.watch2_application,
+    apple_product_type.watch2_extension,
+]
+
+def _application_exports_linkopts(*, ctx, rule_descriptor):
+    """Returns linker flags that restrict exports for application executables."""
+    if not rule_descriptor:
+        return []
+
+    if rule_descriptor.product_type not in _APPLICATION_EXECUTABLE_PRODUCT_TYPES:
+        return []
+
+    enabled_features = features_support.compute_enabled_features(
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
+    if _RESTRICT_APPLICATION_EXPORTS_FEATURE not in enabled_features:
+        return []
+
+    # Keep the Mach-O header symbol available to crash reporters and binary-inspection tools while
+    # allowing the linker to omit the rest of the executable's export metadata.
+    return ["-Wl,-exported_symbol,__mh_execute_header"]
 
 def _archive_multi_arch_static_library(
         *,
@@ -482,7 +519,10 @@ def _register_binary_linking_action(
             `OutputGroupInfo` provider of the calling rule.
         *   `debug_outputs_provider`: An AppleDebugOutputs provider
     """
-    linkopts = []
+    linkopts = _application_exports_linkopts(
+        ctx = ctx,
+        rule_descriptor = rule_descriptor,
+    )
     link_inputs = []
 
     # Add linkopts/linker inputs that are common to all the rules.

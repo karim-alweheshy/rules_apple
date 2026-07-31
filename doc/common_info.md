@@ -235,6 +235,40 @@ ios_unit_test(
 )
 ```
 
+### Restrict Application Exports {#apple.restrict_application_exports}
+
+Application and application-extension executables are launched by the operating
+system; unlike frameworks or dynamic libraries, they normally do not provide an
+API for another binary to link against. Their exported-symbol metadata can
+therefore be limited to the Mach-O header symbol used by crash reporters and
+binary-inspection tools:
+
+```shell
+bazel build --features=apple.restrict_application_exports //your/app
+```
+
+The feature passes `-exported_symbol __mh_execute_header` to application, App
+Clip, and application-extension link actions. It is opt-in because applications
+that deliberately discover their own symbols with APIs such as `dlsym` may need
+additional exports. Such targets can provide an `exported_symbols_lists` file
+instead, or opt out when the feature is enabled globally:
+
+```bzl
+ios_application(
+    ...
+    features = ["-apple.restrict_application_exports"],
+)
+```
+
+Apply a global flag only to configurations that build shipping applications.
+An application used as the bundle loader for a hosted XCTest may need to export
+the symbols referenced by that test bundle; list those symbols explicitly before
+enabling this feature for the test build.
+
+Frameworks, dynamic libraries, test bundles, command-line tools, and other
+plug-ins are unchanged. Their public symbols are part of their client contract
+and should be controlled explicitly with `exported_symbols_lists` when needed.
+
 ### Codesigning performance
 
 For larger applications, codesigning the final binary might be a
